@@ -4,40 +4,62 @@ name: Build Dungeons Save Forge APK
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches:
+      - main
+
+permissions:
+  contents: read
 
 jobs:
   build:
+    name: Build Android APK
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
-      - uses: android-actions/setup-android@v3
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
 
-      - name: Install Android SDK
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
-
-      - name: Unpack project
+      - name: Install Android SDK packages
         run: |
+          sdkmanager "platforms;android-35" "build-tools;35.0.0"
+          yes | sdkmanager --licenses
+
+      - name: Extract Dungeons Save Forge project
+        run: |
+          if [ ! -f DungeonsSaveForge-Android-Project.zip ]; then
+            echo "ERROR: Project ZIP not found in repository root."
+            exit 1
+          fi
+
           unzip -q DungeonsSaveForge-Android-Project.zip -d extracted
+
           cp -R extracted/DungeonsSaveEditorAndroid/app .
           cp extracted/DungeonsSaveEditorAndroid/build.gradle .
           cp extracted/DungeonsSaveEditorAndroid/settings.gradle .
           cp extracted/DungeonsSaveEditorAndroid/gradle.properties .
 
-      - name: Build APK
+      - name: Install Gradle
         run: |
           wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
           unzip -q gradle-8.7-bin.zip -d /tmp
+
+      - name: Build APK
+        run: |
           /tmp/gradle-8.7/bin/gradle assembleDebug
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
           name: DungeonsSaveForge-APK
           path: app/build/outputs/apk/debug/app-debug.apk
-          
+          if-no-files-found: error
+          retention-days: 14
