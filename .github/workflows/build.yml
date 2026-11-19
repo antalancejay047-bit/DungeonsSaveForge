@@ -50,7 +50,7 @@ jobs:
 
       - name: Extract project ZIP
         run: |
-          unzip -q DungeonsSaveForge-Android-Project-WITH-LOGO.zip -d extracted
+          unzip -q DungeonsSaveForge-Android-Project-WITH-LOGO-FIXED.zip -d extracted
           cp -R extracted/DungeonsSaveEditorAndroid/app .
           cp extracted/DungeonsSaveEditorAndroid/build.gradle .
           cp extracted/DungeonsSaveEditorAndroid/settings.gradle .
