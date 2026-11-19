@@ -15,6 +15,10 @@ jobs:
     name: Build Android APK
     runs-on: ubuntu-latest
 
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -25,21 +29,27 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK packages
+      - name: Configure Android SDK
         run: |
-          sdkmanager "platforms;android-35" "build-tools;35.0.0"
-          yes | sdkmanager --licenses
+          echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "$ANDROID_HOME/build-tools/35.0.0" >> $GITHUB_PATH
 
-      - name: Extract Dungeons Save Forge project
+      - name: Accept licenses and install SDK
         run: |
-          if [ ! -f DungeonsSaveForge-Android-Project.zip ]; then
-            echo "ERROR: Project ZIP not found in repository root."
-            exit 1
-          fi
+          yes | sdkmanager --licenses || true
+          sdkmanager --install \
+            "platforms;android-35" \
+            "build-tools;35.0.0"
 
+      - name: Check Android SDK
+        run: |
+          sdkmanager --version
+          ls "$ANDROID_HOME/platforms"
+          ls "$ANDROID_HOME/build-tools"
+
+      - name: Extract project ZIP
+        run: |
           unzip -q DungeonsSaveForge-Android-Project.zip -d extracted
 
           cp -R extracted/DungeonsSaveEditorAndroid/app .
