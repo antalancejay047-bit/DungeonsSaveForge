@@ -33,30 +33,29 @@ jobs:
         run: |
           sdkmanager "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Extract Android project
+      - name: Extract project ZIP
         run: |
           mkdir -p extracted
-          ZIP_FILE=$(find . -maxdepth 2 -type f -iname 'DungeonsSaveForge*.zip' | head -n 1)
+          ZIP_FILE=$(find . -maxdepth 2 -type f -name 'DungeonsSaveForge-ENCHANTMENTS-CATEGORY-FIX.zip' | head -n 1)
 
           if [ -z "$ZIP_FILE" ]; then
-            echo "ERROR: DungeonsSaveForge ZIP file not found in repository."
+            echo "Project ZIP not found!"
             ls -la
             exit 1
           fi
 
-          echo "Extracting: $ZIP_FILE"
           unzip -q "$ZIP_FILE" -d extracted
 
-          PROJECT_DIR=$(find extracted -type f \( -name settings.gradle -o -name settings.gradle.kts \) -printf '%h\n' | head -n 1)
+          PROJECT_DIR=$(find extracted -type f -name settings.gradle -printf '%h\n' | head -n 1)
 
           if [ -z "$PROJECT_DIR" ]; then
-            echo "ERROR: No settings.gradle found inside the ZIP."
-            find extracted -maxdepth 4 -type f | head -n 100
+            echo "settings.gradle not found!"
+            find extracted -maxdepth 4 -type f
             exit 1
           fi
 
-          echo "Android project found at: $PROJECT_DIR"
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+          echo "Found project: $PROJECT_DIR"
 
       - name: Build APK
         run: |
@@ -68,6 +67,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: DungeonsSaveForge-debug-apk
-          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/app-debug.apk
+          path: extracted/DungeonsSaveEditorAndroid/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
