@@ -31,31 +31,40 @@ jobs:
         with:
           packages: 'platform-tools'
 
+      - name: Extract Android project
+        shell: bash
+        run: |
+          ZIP_FILE="DungeonsSaveForge-GEAR-FIX.zip"
+
+          if [ ! -f "$ZIP_FILE" ]; then
+            echo "ERROR: Project ZIP not found!"
+            exit 1
+          fi
+
+          mkdir -p extracted
+          unzip -o "$ZIP_FILE" -d extracted
+
+          echo "ZIP extracted successfully."
+          echo "Files found:"
+          find extracted -maxdepth 5 -type f | head -200
+
       - name: Find Android project
         id: project
         shell: bash
         run: |
-          echo "Checking repository files..."
-          find . -maxdepth 5 -type f \
-            ! -path './.git/*' | sort | head -200
-
-          SETTINGS_FILE=$(find . \
+          SETTINGS_FILE=$(find extracted \
             -type f \
             \( -name settings.gradle -o -name settings.gradle.kts \) \
-            ! -path './.git/*' \
-            ! -path '*/.gradle/*' \
             | head -1)
 
           if [ -z "$SETTINGS_FILE" ]; then
-            echo "ERROR: Could not find settings.gradle or settings.gradle.kts"
-            echo "Make sure you uploaded the extracted Android project."
+            echo "ERROR: No Gradle settings file found inside ZIP."
             exit 1
           fi
 
-          PROJECT_DIR=$(dirname "$SETTINGS_FILE")
-          PROJECT_DIR=$(realpath "$PROJECT_DIR")
+          PROJECT_DIR=$(dirname "$(realpath "$SETTINGS_FILE")")
 
-          echo "Found project: $PROJECT_DIR"
+          echo "Found Android project: $PROJECT_DIR"
           echo "project_dir=$PROJECT_DIR" >> "$GITHUB_OUTPUT"
 
       - name: Build debug APK
@@ -67,8 +76,6 @@ jobs:
             chmod +x gradlew
             ./gradlew assembleDebug
           else
-            echo "Gradle wrapper not found. Installing Gradle 8.7..."
-
             wget -q \
               https://services.gradle.org/distributions/gradle-8.7-bin.zip \
               -O /tmp/gradle.zip
@@ -91,11 +98,10 @@ jobs:
             -exec cp {} apk-output/ \;
 
           if [ -z "$(ls -A apk-output)" ]; then
-            echo "ERROR: No APK file was generated."
+            echo "ERROR: No APK was generated."
             exit 1
           fi
 
-          echo "Generated APK files:"
           ls -lh apk-output
 
       - name: Upload APK
