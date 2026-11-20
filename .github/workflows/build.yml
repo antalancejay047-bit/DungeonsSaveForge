@@ -32,12 +32,26 @@ jobs:
 
       - name: Build debug APK
         run: |
+          if [ -f settings.gradle ] || [ -f settings.gradle.kts ]; then
+            PROJECT_DIR="."
+          elif [ -f DungeonsSaveEditorAndroid/settings.gradle ] || [ -f DungeonsSaveEditorAndroid/settings.gradle.kts ]; then
+            PROJECT_DIR="DungeonsSaveEditorAndroid"
+          else
+            echo "ERROR: Could not find settings.gradle"
+            exit 1
+          fi
+
+          cd "$PROJECT_DIR"
+
           wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip -O /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d /tmp
           /tmp/gradle-8.7/bin/gradle assembleDebug
 
+          mkdir -p "$GITHUB_WORKSPACE/apk-output"
+          cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/apk-output/"
+
       - uses: actions/upload-artifact@v4
         with:
           name: DungeonsSaveEditor-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: apk-output/app-debug.apk
           retention-days: 14
